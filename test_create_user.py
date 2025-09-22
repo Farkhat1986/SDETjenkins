@@ -55,15 +55,15 @@ class TestUsersCRUD:
 
         return response.json()["id"]  # Возвращаем ID для следующих тестов
 
-    def test_get_user(user_id):
+    def test_get_user(test_user_id):
         """Позитивный тест на получение информации о пользователе"""
-        url = f"{BASE_URL}/wp/v2/users/{user_id}"
+        url = f"{BASE_URL}/wp/v2/users/{test_user_id}"
 
         response = requests.get(url, auth=AUTH, headers=HEADERS)
 
         # Проверки
         assert response.status_code == 200
-        assert response.json()["id"] == user_id
+        assert response.json()["id"] == test_user_id
         assert response.json()["username"] == "testuser"
         assert response.json()["email"] == "testuser@example.com"
 
