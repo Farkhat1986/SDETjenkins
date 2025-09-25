@@ -23,6 +23,9 @@ venv\Scripts\activate  # Windows
 
 # Установить зависимости
 pip install -r requirements.txt
+
+# Для запуску двух контейнеров Docker, база данных MySQL и Apache сервер с предустановленным WordPress
+В командной строке выполнить команду – `docker-compose up`
 ```
 ## Тест-кейсы CRUD операций
 
