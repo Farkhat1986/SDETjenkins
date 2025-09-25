@@ -1,8 +1,7 @@
 import requests
 import pytest
 # получаю данные из папки config файла settings
-from config.settings import BASE_URL, AUTH, HEADERS, TEST_USER_ID
-
+from config.settings import BASE_URL, AUTH, HEADERS, TEST_CONFIGURATION
 
 
 def test_create_user():
@@ -24,9 +23,9 @@ def test_create_user():
 
     response = requests.post(url, json=data, auth=AUTH, headers=HEADERS)
 
-    assert response.status_code == 201
-    assert response.json()["username"] == "testuser8"
-    assert response.json()["email"] == "testuser8@example.com"
+    assert response.status_code == TEST_CONFIGURATION["STATUS_CODE_FERST"]
+    assert response.json()["username"] == data["username"]
+    assert response.json()["email"] == data["email"]
     assert "subscriber" in response.json()["roles"]
 
     CREATED_USER_ID = response.json()["id"]
@@ -48,10 +47,10 @@ def test_update_user():
 
     response = requests.put(url, json=data, auth=AUTH, headers=HEADERS)
 
-    assert response.status_code == 200
-    assert response.json()["name"] == "Updated Test User8"
-    assert response.json()["first_name"] == "Updated8"
-    assert response.json()["last_name"] == "User8"
+    assert response.status_code == TEST_CONFIGURATION["STATUS_CODE"]
+    assert response.json()["name"] == data["name"]
+    assert response.json()["first_name"] == data["first_name"]
+    assert response.json()["last_name"] == data["last_name"]
     assert response.json()["id"] == 4
 
 
@@ -59,13 +58,13 @@ def test_get_user():
 
     """Тест для получения информации пользователя"""
 
-    url = f"{BASE_URL}/wp/v2/users/{TEST_USER_ID}"
+    url = f"{BASE_URL}/wp/v2/users/{TEST_CONFIGURATION['TEST_USER_ID']}"
 
-    response = requests.get(url, auth=AUTH, timeout=10)
-    assert response.status_code == 200
+    response = requests.get(url, auth=AUTH, timeout=TEST_CONFIGURATION["TIME_OUT"])
+    assert response.status_code == TEST_CONFIGURATION["STATUS_CODE"]
 
     user_data = response.json()
-    assert user_data["id"] == TEST_USER_ID
+    assert user_data["id"] == TEST_CONFIGURATION['TEST_USER_ID']
     assert user_data["slug"] == "debug_test_user"
 
 
@@ -73,11 +72,11 @@ def test_user_exists():
 
     """Tecт проверка, что пользователь существует"""
 
-    url = f"{BASE_URL}/wp/v2/users/{TEST_USER_ID}"
+    url = f"{BASE_URL}/wp/v2/users/{TEST_CONFIGURATION['TEST_USER_ID']}"
     response = requests.get(url, auth=AUTH)
 
-    assert response.status_code != 404, "Пользователь не найден"
-    assert response.status_code == 200, f"Ошибка сервера: {response.status_code}"
+    assert response.status_code != TEST_CONFIGURATION["STATUS_CODE_NOT_FOUND"], "Пользователь не найден"
+    assert response.status_code == TEST_CONFIGURATION["STATUS_CODE"], f"Ошибка сервера: {response.status_code}"
 
 
 def test_delete_user():
@@ -90,7 +89,9 @@ def test_delete_user():
     params = {"force": "true", "reassign": "1"} # в параметре указываю 1 для передачи всех данных admin
 
     response = requests.delete(url, auth=AUTH, headers=HEADERS, params=params)
-    assert response.status_code in [200, 202, 204], f"Ошибка при удалении: {response.status_code}"
+    assert response.status_code in [TEST_CONFIGURATION["STATUS_CODE"], TEST_CONFIGURATION["STATUS_CODE_ACCEPTED"],
+                                    TEST_CONFIGURATION["STATUS_CODE_NO_CONTENT"]], \
+        f"Ошибка при удалении: {response.status_code}"
 
 
 if __name__ == "__main__":
