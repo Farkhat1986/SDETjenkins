@@ -1,9 +1,12 @@
 import requests
 import pytest
+import allure # импортирую allure и создаю далее feature для отчета
 # получаю данные из папки config файла settings
 from config.settings import BASE_URL, AUTH, HEADERS, TEST_CONFIGURATION
 
 
+@allure.feature("Create user")
+@allure.story("Create user")
 def test_create_user():
 
     """Тест для создания пользователя"""
@@ -23,15 +26,25 @@ def test_create_user():
 
     response = requests.post(url, json=data, auth=AUTH, headers=HEADERS)
 
-    assert response.status_code == TEST_CONFIGURATION["STATUS_CODE_FERST"]
-    assert response.json()["username"] == data["username"]
-    assert response.json()["email"] == data["email"]
-    assert "subscriber" in response.json()["roles"]
+    with allure.step("Check Status code"):
 
-    CREATED_USER_ID = response.json()["id"]
-    print(f"Создан пользователь с ID: {CREATED_USER_ID}")
+        assert response.status_code == TEST_CONFIGURATION["STATUS_CODE_FERST"]
 
+    with allure.step("Check username"):
+        assert response.json()["username"] == data["username"]
 
+    with allure.step("Check email"):
+        assert response.json()["email"] == data["email"]
+
+    with allure.step("Check roles"):
+        assert "subscriber" in response.json()["roles"]
+
+    with allure.step("Create user"):
+        CREATED_USER_ID = response.json()["id"]
+        print(f"Создан пользователь с ID: {CREATED_USER_ID}")
+
+@allure.feature("Update user")
+@allure.story("Update user")
 def test_update_user():
 
     """Тест для обновления информации пользователя"""
@@ -54,6 +67,8 @@ def test_update_user():
     assert response.json()["id"] == 4
 
 
+@allure.feature("Get user")
+@allure.story("Get user")
 def test_get_user():
 
     """Тест для получения информации пользователя"""
@@ -68,6 +83,8 @@ def test_get_user():
     assert user_data["slug"] == "debug_test_user"
 
 
+@allure.feature("Exist user")
+@allure.story("Exist user")
 def test_user_exists():
 
     """Tecт проверка, что пользователь существует"""
@@ -79,6 +96,8 @@ def test_user_exists():
     assert response.status_code == TEST_CONFIGURATION["STATUS_CODE"], f"Ошибка сервера: {response.status_code}"
 
 
+@allure.feature("Delete user")
+@allure.story("Delete user")
 def test_delete_user():
 
     """Тест для удаления пользователя"""
