@@ -34,7 +34,7 @@ pipeline {
                         fi
 
                         # Установка зависимостей из requirements.txt
-                        pip install --upgrade pip
+
                         pip install -r requirements.txt
                         pip install allure-pytest pytest
                     '''
