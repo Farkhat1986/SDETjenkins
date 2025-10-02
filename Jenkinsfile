@@ -11,12 +11,21 @@ pipeline {
         stage('Run Tests in Docker') {
             steps {
                 script {
-                    docker.image('python:3.10').inside {
+                    docker.image('python:3.10-slim').inside {
                         sh '''
+                            # Проверим версии python и pip
+                            python --version
+                            pip --version
+
+                            # Установим pip, если его нет
                             apt-get update -y
-                            apt-get install -y python3-pip  # Установим pip, если он не установлен
+                            apt-get install -y python3-pip
+
+                            # Установим зависимости
                             pip install --upgrade pip
                             pip install -r requirements.txt
+
+                            # Запустим тесты
                             pytest --alluredir=allure-results
                         '''
                     }
@@ -47,4 +56,5 @@ pipeline {
         }
     }
 }
+
 
