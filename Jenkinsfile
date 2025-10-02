@@ -22,12 +22,15 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    // Проверим, установлен ли pip и необходимые пакеты
+                    // Проверим, установлен ли pip и при необходимости установим его
                     sh '''
-                        # Проверка установки pip
+                        echo "Проверяем наличие pip..."
                         if ! command -v pip &> /dev/null; then
-                            echo "pip не найден, пожалуйста, установите его!"
-                            exit 1
+                            echo "pip не найден, начинаем установку..."
+                            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+                            python get-pip.py
+                        else
+                            echo "pip уже установлен."
                         fi
 
                         # Установка зависимостей из requirements.txt
@@ -44,6 +47,7 @@ pipeline {
                 script {
                     // Запуск тестов с выводом в директорию allure-results
                     sh '''
+                        echo "Запуск тестов с выводом в allure-results..."
                         python -m pytest tests/ --alluredir=${ALLURE_RESULTS_DIR} --junitxml=test-results.xml -v
                     '''
                 }
@@ -55,6 +59,7 @@ pipeline {
                 script {
                     // Генерация Allure-отчета
                     sh '''
+                        echo "Генерация Allure-отчета..."
                         allure generate ${ALLURE_RESULTS_DIR} -o ${ALLURE_REPORT_DIR} --clean
                     '''
                 }
