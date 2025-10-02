@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Farkhat1986/SDETjenkins.git/'
+                git branch: 'main', url: 'https://github.com/Farkhat1986/SDETjenkins.git'
             }
         }
 
@@ -37,16 +37,13 @@ pipeline {
 
     post {
         always {
-            // Сохраняем JUnit результаты (если нужны для Jenkins)
             junit '**/allure-results/*.xml'
-
-            // Отправляем письмо
             emailext(
                 subject: "Python тесты — ${currentBuild.currentResult}",
                 body: """
                     <h3>Сборка #${env.BUILD_NUMBER}</h3>
                     <p>Статус: <b>${currentBuild.currentResult}</b></p>
-                    <p><a href="${env.BUILD_URL}allure">Смотреть Allure-отчёт</a></p>
+                    <p><a href="${env.BUILD_URL}allure-report">Смотреть Allure-отчёт</a></p>
                 """,
                 to: 'farhatsdet@mail.ru',
                 mimeType: 'text/html'
@@ -54,4 +51,3 @@ pipeline {
         }
     }
 }
-
