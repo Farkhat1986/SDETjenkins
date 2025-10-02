@@ -1,5 +1,16 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.10'
+            args '-v /tmp:/tmp' // Пример для монтирования временной папки
+        }
+    }
+
+    environment {
+        // Устанавливаем переменные окружения для Allure
+        ALLURE_RESULTS_DIR = 'allure-results'
+        ALLURE_REPORT_DIR = 'allure-report'
+    }
 
     stages {
         stage('Checkout') {
@@ -8,34 +19,48 @@ pipeline {
             }
         }
 
-        stage('Run Tests in Docker') {
+        stage('Install Dependencies') {
             steps {
                 script {
-                    docker.image('python:3.10').inside {
-                        sh '''
-                            # Проверка версий python и pip
-                            python --version
-                            pip --version
+                    sh '''
+                        # Установка pip, если не установлен
+                        apt-get update -y
+                        apt-get install -y python3-pip
 
-                            # Установка pip, если его нет
-                            apt-get update -y
-                            apt-get install -y python3-pip
+                        # Установка зависимостей из requirements.txt
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install allure-pytest pytest
+                    '''
+                }
+            }
+        }
 
-                            # Установка зависимостей
-                            pip install --upgrade pip
-                            pip install -r requirements.txt
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Запуск тестов с выводом в директорию allure-results
+                    sh '''
+                        python -m pytest tests/ --alluredir=${ALLURE_RESULTS_DIR} --junitxml=test-results.xml -v
+                    '''
+                }
+            }
+        }
 
-                            # Запуск тестов
-                            pytest --alluredir=allure-results
-                        '''
-                    }
+        stage('Generate Allure Report') {
+            steps {
+                script {
+                    // Генерация Allure-отчета
+                    sh '''
+                        allure generate ${ALLURE_RESULTS_DIR} -o ${ALLURE_REPORT_DIR} --clean
+                    '''
                 }
             }
         }
 
         stage('Publish Allure Report') {
             steps {
-                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                allure includeProperties: false, jdk: '', results: [[path: "${ALLURE_RESULTS_DIR}"]]
             }
         }
     }
@@ -50,9 +75,20 @@ pipeline {
                     <p>Статус: <b>${currentBuild.currentResult}</b></p>
                     <p><a href="${env.BUILD_URL}allure-report">Смотреть Allure-отчёт</a></p>
                 """,
-                to: 'farhatsdet@mail.ru',
+                to: 'farhatsdet@mail.ru', // Уведомление на почту
                 mimeType: 'text/html'
             )
         }
+
+        success {
+            // Успешное завершение сборки
+            echo "Сборка прошла успешно!"
+        }
+
+        failure {
+            // Ошибка сборки
+            echo "Сборка завершена с ошибкой."
+        }
     }
 }
+
