@@ -1,10 +1,17 @@
 FROM python:3.10
 
-WORKDIR /app
+# Устанавливаем необходимые библиотеки
+RUN pip install --upgrade pip
+RUN pip install allure-pytest pytest
 
+# Копируем требования
 COPY requirements.txt .
+
+# Устанавливаем зависимости из requirements.txt
 RUN pip install -r requirements.txt
 
-COPY . .
+# Рабочая директория
+WORKDIR /app
 
-CMD ["python", "-m", "pytest", "tests/test_user.py", "--alluredir=allure-results", "-v"]
+# Указываем, что контейнер будет запускать по умолчанию
+CMD ["pytest"]
