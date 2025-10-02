@@ -1,9 +1,3 @@
-properties([
-    pipelineTriggers([
-        [$class: 'GitHubPushTrigger']
-    ])
-])
-
 pipeline {
     agent any
 
@@ -21,7 +15,11 @@ pipeline {
                         sh '''
                             pip install --upgrade pip
                             pip install -r requirements.txt
-                            pytest --alluredir=allure-results
+                            pip install allure-pytest  # Установим allure-pytest
+                            curl -o allure-2.13.8.tgz -L https://github.com/allure-framework/allure2/releases/download/2.13.8/allure-2.13.8.tgz  # Скачиваем allure
+                            tar -zxvf allure-2.13.8.tgz -C /opt/  # Разархивируем
+                            export PATH=$PATH:/opt/allure-2.13.8/bin  # Добавляем в PATH
+                            pytest --alluredir=allure-results  # Запуск тестов с результатами в allure-results
                         '''
                     }
                 }
@@ -30,14 +28,14 @@ pipeline {
 
         stage('Publish Allure Report') {
             steps {
-                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]  // Генерация отчета
             }
         }
     }
 
     post {
         always {
-            junit '**/allure-results/*.xml'
+            junit '**/allure-results/*.xml'  // Используем junit для Jenkins
             emailext(
                 subject: "Python тесты — ${currentBuild.currentResult}",
                 body: """
