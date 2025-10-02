@@ -5,6 +5,7 @@ import allure # импортирую allure и создаю далее feature �
 from config.settings import BASE_URL, AUTH, HEADERS, TEST_CONFIGURATION
 
 
+CREATED_USER_ID = None
 @allure.feature("Create user")
 @allure.story("Create user")
 def test_create_user():
@@ -17,10 +18,10 @@ def test_create_user():
 
     url = f"{BASE_URL}/wp/v2/users"
     data = {
-        "username": "testuser8",
-        "email": "testuser8@example.com",
+        "username": "testuser7",
+        "email": "testuser7@example.com",
         "password": "securepassword123",
-        "name": "Test User8",
+        "name": "Test User7",
         "roles": ["subscriber"]
     }
 
@@ -28,7 +29,7 @@ def test_create_user():
 
     with allure.step("Check Status code"):
 
-        assert response.status_code == TEST_CONFIGURATION["STATUS_CODE_FERST"]
+        assert response.status_code == TEST_CONFIGURATION["STATUS_CODE_FIRST"]
 
     with allure.step("Check username"):
         assert response.json()["username"] == data["username"]
