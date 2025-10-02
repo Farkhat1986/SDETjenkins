@@ -13,13 +13,11 @@ pipeline {
                 script {
                     docker.image('python:3.10').inside {
                         sh '''
+                            apt-get update -y
+                            apt-get install -y python3-pip  # Установим pip, если он не установлен
                             pip install --upgrade pip
                             pip install -r requirements.txt
-                            pip install allure-pytest  # Установим allure-pytest
-                            curl -o allure-2.13.8.tgz -L https://github.com/allure-framework/allure2/releases/download/2.13.8/allure-2.13.8.tgz  # Скачиваем allure
-                            tar -zxvf allure-2.13.8.tgz -C /opt/  # Разархивируем
-                            export PATH=$PATH:/opt/allure-2.13.8/bin  # Добавляем в PATH
-                            pytest --alluredir=allure-results  # Запуск тестов с результатами в allure-results
+                            pytest --alluredir=allure-results
                         '''
                     }
                 }
@@ -28,14 +26,14 @@ pipeline {
 
         stage('Publish Allure Report') {
             steps {
-                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]  // Генерация отчета
+                allure includeProperties: false, jdk: '', results: [[path: 'allure-results']]
             }
         }
     }
 
     post {
         always {
-            junit '**/allure-results/*.xml'  // Используем junit для Jenkins
+            junit '**/allure-results/*.xml'
             emailext(
                 subject: "Python тесты — ${currentBuild.currentResult}",
                 body: """
@@ -49,3 +47,4 @@ pipeline {
         }
     }
 }
+
