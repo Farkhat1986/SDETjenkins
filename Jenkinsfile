@@ -1,8 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'python:3.10'
-            args '-v /tmp:/tmp' // Пример для монтирования временной папки
+            image 'python:3.10' // Используем Python образ с установленным pip
+            args '-v /tmp:/tmp' // Пример для монтирования временной папки, если нужно
         }
     }
 
@@ -22,10 +22,13 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
+                    // Проверим, установлен ли pip и необходимые пакеты
                     sh '''
-                        # Установка pip, если не установлен
-                        apt-get update -y
-                        apt-get install -y python3-pip
+                        # Проверка установки pip
+                        if ! command -v pip &> /dev/null; then
+                            echo "pip не найден, пожалуйста, установите его!"
+                            exit 1
+                        fi
 
                         # Установка зависимостей из requirements.txt
                         pip install --upgrade pip
