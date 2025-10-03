@@ -1,15 +1,14 @@
 pipeline {
     agent {
         docker {
-            image 'python:3.10' // Используем Python образ с установленным pip
-            args '-v /tmp:/tmp' // Пример для монтирования временной папки, если нужно
+            image 'python:3.11'   // Контейнер с Python
+            args '-v /var/run/docker.sock:/var/run/docker.sock -v $WORKSPACE:/workspace -w /workspace'
         }
     }
 
     environment {
-        // Устанавливаем переменные окружения для Allure
         ALLURE_RESULTS_DIR = 'allure-results'
-        ALLURE_REPORT_DIR = 'allure-report'
+        ALLURE_REPORT_DIR  = 'allure-report'
     }
 
     stages {
@@ -19,55 +18,48 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Start environment') {
             steps {
-                script {
-                    // Проверим, установлен ли pip и при необходимости установим его
-                    sh '''
-                        echo "Проверяем наличие pip..."
-                        if ! command -v pip &> /dev/null; then
-                            echo "pip не найден, начинаем установку..."
-                            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-                            python get-pip.py
-                        else
-                            echo "pip уже установлен."
-                        fi
-
-                        # Установка зависимостей из requirements.txt
-
-                        pip install -r requirements.txt
-                        pip install allure-pytest pytest
-                    '''
-                }
+                sh '''
+                    echo "Запускаем WordPress + MySQL через docker-compose..."
+                    docker-compose -f docker-compose.yml up -d
+                    echo "Ждём, пока сервисы поднимутся..."
+                    sleep 20
+                '''
             }
         }
 
-        stage('Run Tests') {
+        stage('Install dependencies') {
             steps {
-                script {
-                    // Запуск тестов с выводом в директорию allure-results
-                    sh '''
-                        echo "Запуск тестов с выводом в allure-results..."
-                        python -m pytest tests/ --alluredir=${ALLURE_RESULTS_DIR} --junitxml=test-results.xml -v
-                    '''
-                }
+                sh '''
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install pytest allure-pytest
+                '''
             }
         }
 
-        stage('Generate Allure Report') {
+        stage('Run tests') {
             steps {
-                script {
-                    // Генерация Allure-отчета
-                    sh '''
-                        echo "Генерация Allure-отчета..."
-                        allure generate ${ALLURE_RESULTS_DIR} -o ${ALLURE_REPORT_DIR} --clean
-                    '''
-                }
+                sh '''
+                    pytest tests/ \
+                        --junitxml=junit-report.xml \
+                        --alluredir=${ALLURE_RESULTS_DIR} -v
+                '''
             }
         }
 
-        stage('Publish Allure Report') {
+        stage('Generate Allure report') {
             steps {
+                sh '''
+                    allure generate ${ALLURE_RESULTS_DIR} -o ${ALLURE_REPORT_DIR} --clean
+                '''
+            }
+        }
+
+        stage('Publish reports') {
+            steps {
+                junit 'junit-report.xml'
                 allure includeProperties: false, jdk: '', results: [[path: "${ALLURE_RESULTS_DIR}"]]
             }
         }
@@ -75,27 +67,20 @@ pipeline {
 
     post {
         always {
-            junit '**/allure-results/*.xml'
+            sh '''
+                echo "Останавливаем docker-compose окружение..."
+                docker-compose -f docker-compose.yml down
+            '''
             emailext(
                 subject: "Python тесты — ${currentBuild.currentResult}",
                 body: """
                     <h3>Сборка #${env.BUILD_NUMBER}</h3>
                     <p>Статус: <b>${currentBuild.currentResult}</b></p>
-                    <p><a href="${env.BUILD_URL}allure-report">Смотреть Allure-отчёт</a></p>
+                    <p><a href="${env.BUILD_URL}allure-report">Allure-отчёт</a></p>
                 """,
-                to: 'farhatsdet@mail.ru', // Уведомление на почту
+                to: 'farhatsdet@mail.ru',
                 mimeType: 'text/html'
             )
-        }
-
-        success {
-            // Успешное завершение сборки
-            echo "Сборка прошла успешно!"
-        }
-
-        failure {
-            // Ошибка сборки
-            echo "Сборка завершена с ошибкой."
         }
     }
 }
